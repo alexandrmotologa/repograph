@@ -139,6 +139,9 @@ async function initGraph() {
       }
     });
 
+    window.cy = cy;
+    window.inspectSymbol = inspectSymbol;
+
     cy.on("tap", "node", function(evt) {
       const node = evt.target;
       inspectSymbol(node.data("id"), node.data("label"));

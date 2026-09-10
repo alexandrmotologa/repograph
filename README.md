@@ -1,4 +1,20 @@
-# RepoGraph
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="RepoGraph Logo" width="140" style="border-radius: 28px;" />
+</p>
+
+<h1 align="center">RepoGraph</h1>
+
+<p align="center">
+  <strong>Local-First Codebase Knowledge Graph & Blast-Radius Calculation Engine</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/alexandrmotologa/repograph/actions"><img src="https://img.shields.io/badge/CI-Passing-success?style=flat-square&logo=githubactions" alt="CI" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12%2B-blue?style=flat-square&logo=python" alt="Python" /></a>
+  <a href="https://tree-sitter.github.io/"><img src="https://img.shields.io/badge/Tree--sitter-Multi--Language-teal?style=flat-square" alt="Tree-sitter" /></a>
+  <a href="https://networkx.org/"><img src="https://img.shields.io/badge/Graph-NetworkX-orange?style=flat-square" alt="NetworkX" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" /></a>
+</p>
 
 RepoGraph is a local-first codebase knowledge graph and blast-radius calculation engine. It parses source files into concrete Abstract Syntax Trees using Tree-sitter, constructs a directed code property graph with NetworkX, tracks call hierarchies across files, calculates refactoring blast radius, detects circular dependencies, and spots unreachable dead code.
 
@@ -102,6 +118,10 @@ Output:
 `-- dispatch (infra/outbox.py) depth: 1
 ```
 
+<p align="center">
+  <img src="docs/images/cli_overview.png?raw=true" alt="RepoGraph CLI Terminal Output" width="90%" />
+</p>
+
 ### 3. Detect circular dependencies
 
 Find circular import cycles across packages:
@@ -154,6 +174,10 @@ Keybindings:
 - `r`: Rescan and reload repository
 - `q`: Exit
 
+<p align="center">
+  <img src="docs/images/tui_dashboard.png?raw=true" alt="RepoGraph Textual Terminal Dashboard" width="90%" />
+</p>
+
 ### 8. Run local web visualizer
 
 Launch the FastAPI web server to inspect the graph in your browser:
@@ -163,6 +187,10 @@ repograph serve --dir ./path/to/project --port 8765
 ```
 
 Open `http://127.0.0.1:8765` in your browser. Click on any node to isolate its blast radius and highlight upstream and downstream paths.
+
+<p align="center">
+  <img src="docs/images/web_visualizer.png?raw=true" alt="RepoGraph Interactive Web Visualizer" width="90%" />
+</p>
 
 ### 9. Trace shortest call path between symbols
 
