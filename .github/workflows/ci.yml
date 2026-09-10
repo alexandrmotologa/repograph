@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras --dev
+
+      - name: Lint with ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Run test suite with coverage
+        run: |
+          uv run pytest -v --cov=repograph --cov-report=xml --cov-report=term-missing
+
+      - name: Validate CLI execution
+        run: |
+          uv run repograph --help
+          uv run repograph scan tests/fixtures/python_app
+          uv run repograph blast-radius "OrderService.cancel_order" --dir tests/fixtures/python_app
+          uv run repograph cycles --dir tests/fixtures/python_app
+          uv run repograph dead-code --dir tests/fixtures/python_app
+          uv run repograph export --format mermaid --dir tests/fixtures/python_app
