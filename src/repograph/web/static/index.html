@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RepoGraph — Interactive Codebase Knowledge Graph</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo-text">RepoGraph</div>
+      <div class="stat-badge" id="stat-nodes">0 symbols</div>
+      <div class="stat-badge" id="stat-edges">0 edges</div>
+      <div class="stat-badge" id="stat-cycles">0 cycles</div>
+    </div>
+    <div class="header-controls">
+      <input type="text" id="search" class="search-input" placeholder="Search symbols in graph...">
+      <div class="btn-group">
+        <button id="btn-fit">Fit Graph</button>
+        <button id="btn-reset">Clear Selection</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout-container">
+    <div id="cy"></div>
+
+    <aside class="inspector-drawer" id="drawer">
+      <div class="drawer-header">
+        <h2 class="symbol-title" id="drawer-title">Select a Symbol</h2>
+        <div class="symbol-meta" id="drawer-file">Click any node to inspect blast radius</div>
+      </div>
+
+      <div class="score-card">
+        <div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase;">Blast Radius</div>
+          <div class="score-val score-green" id="score-value">--/100</div>
+        </div>
+        <div style="text-align: right; font-size: 0.85rem;">
+          <div><strong id="count-callers">0</strong> callers</div>
+          <div><strong id="count-files">0</strong> files</div>
+          <div><strong id="count-apis">0</strong> entrypoints</div>
+        </div>
+      </div>
+
+      <div class="tree-section">
+        <div class="tree-title">▲ Upstream Callers (Who breaks)</div>
+        <ul class="tree-list" id="upstream-list">
+          <li style="color: var(--text-secondary); font-size: 0.8rem;">No callers identified.</li>
+        </ul>
+      </div>
+
+      <div class="tree-section">
+        <div class="tree-title">▼ Downstream Callees (Side effects)</div>
+        <ul class="tree-list" id="downstream-list">
+          <li style="color: var(--text-secondary); font-size: 0.8rem;">No dependencies identified.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
