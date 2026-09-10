@@ -108,25 +108,34 @@ class PythonParser(BaseParser):
                     break
             return None
 
-        def extract_params(params_node: Node | None) -> list[str]:
+        def extract_params_and_types(params_node: Node | None) -> tuple[list[str], dict[str, str]]:
             if not params_node:
-                return []
+                return [], {}
             params = []
+            param_types = {}
             for child in params_node.children:
                 if child.type in ("identifier", "typed_parameter", "default_parameter"):
-                    # Find the identifier child
-                    for sub in child.children:
-                        if sub.type == "identifier":
-                            p_name = get_text(sub)
-                            if p_name not in ("self", "cls"):
-                                params.append(p_name)
-                            break
-                    else:
-                        if child.type == "identifier":
-                            p_name = get_text(child)
-                            if p_name not in ("self", "cls"):
-                                params.append(p_name)
-            return params
+                    p_name = ""
+                    p_type = ""
+                    if child.type == "typed_parameter":
+                        n_node = child.child_by_field_name("name") or child.children[0]
+                        t_node = child.child_by_field_name("type")
+                        if n_node:
+                            p_name = get_text(n_node)
+                        if t_node:
+                            p_type = get_text(t_node)
+                    elif child.type == "default_parameter":
+                        n_node = child.child_by_field_name("name")
+                        if n_node:
+                            p_name = get_text(n_node)
+                    elif child.type == "identifier":
+                        p_name = get_text(child)
+
+                    if p_name and p_name not in ("self", "cls"):
+                        params.append(p_name)
+                        if p_type:
+                            param_types[p_name] = p_type
+            return params, param_types
 
         def walk_calls(scope_node: Node, caller_id: str) -> None:
             """Walk inside a function/method body to collect calls."""
@@ -180,7 +189,9 @@ class PythonParser(BaseParser):
                             or fn_name.startswith("test_")
                         )
                         doc = extract_docstring(actual_node.child_by_field_name("body"))
-                        params = extract_params(actual_node.child_by_field_name("parameters"))
+                        params, p_types = extract_params_and_types(
+                            actual_node.child_by_field_name("parameters")
+                        )
                         complexity = estimate_cyclomatic_complexity(
                             actual_node, PYTHON_BRANCH_NODES
                         )
@@ -196,6 +207,7 @@ class PythonParser(BaseParser):
                                 line_end=actual_node.end_point.row + 1,
                                 docstring=doc,
                                 parameters=params,
+                                param_types=p_types,
                                 is_exported=not fn_name.startswith("_"),
                                 is_entrypoint=is_entry,
                                 complexity=complexity,

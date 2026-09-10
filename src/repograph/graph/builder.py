@@ -96,6 +96,8 @@ class GraphBuilder:
             line_end=sym.line_end,
             docstring=sym.docstring or "",
             parameters=sym.parameters,
+            param_types=sym.param_types,
+            return_type=sym.return_type or "",
             is_exported=sym.is_exported,
             is_entrypoint=sym.is_entrypoint,
             complexity=sym.complexity,
@@ -293,6 +295,18 @@ class GraphBuilder:
         # 4. If callee has dot: e.g. service.cancel() or OrderService.cancel()
         if "." in clean_name:
             obj_name, method_name = clean_name.split(".", 1)
+
+            # Check if obj_name matches a typed parameter in caller_sym
+            if caller_sym and caller_sym.param_types and obj_name in caller_sym.param_types:
+                type_hint = caller_sym.param_types[obj_name].split(".")[-1]
+                expected_qual = f"{type_hint}.{method_name}"
+                for m in self.symbols_by_qualname.get(expected_qual, []):
+                    if m.kind == SymbolKind.METHOD:
+                        return m.id
+                for m in self.symbols_by_name.get(method_name, []):
+                    if m.kind == SymbolKind.METHOD and m.qualified_name.startswith(f"{type_hint}."):
+                        return m.id
+
             # Check if obj_name was imported (e.g. OrderService)
             if obj_name in imported_symbols:
                 target_class_id = imported_symbols[obj_name]

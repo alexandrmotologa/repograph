@@ -77,15 +77,24 @@ RepoGraph uses modern official Tree-sitter grammar packages (`tree-sitter-python
 - Captures annotations such as `@GetMapping`, `@PostMapping`, `@RestController`, `@Test`.
 - Resolves class inheritance (`extends`) and interface implementations (`implements`).
 
-## 4. Cross-file symbol resolution
+### Go parser
+- Uses `tree-sitter-go` to parse structs, interfaces, functions, and receiver methods (`method_declaration`).
+- Resolves package declarations and imports to support cross-package function invocations.
+
+### Rust parser
+- Uses `tree-sitter-rust` to parse functions, structs, enum types, trait declarations, and `impl` blocks.
+- Maps `impl Trait for Type` blocks to structural `IMPLEMENTS` edges and associates methods to struct namespaces.
+
+## 4. Cross-file symbol resolution and type linking
 
 The `GraphBuilder` links call sites to concrete symbol definitions using a multi-step resolution strategy:
 
 1. **Local sibling resolution**: If the caller is a method of class `OrderService` and calls `self.validate()`, the engine looks up `OrderService.validate` in the current file.
 2. **Local file resolution**: If the call targets a top-level function in the same file, it is resolved directly.
-3. **Import table resolution**: When a file contains `from services.order import cancel_order`, any subsequent call to `cancel_order()` is linked directly to the target node in `services/order.py`.
-4. **Member call resolution**: For calls of the form `service.cancel_order()`, if `service` is an instance or alias of `OrderService`, the engine links to `OrderService.cancel_order`.
-5. **Unique repository match**: If an un-namespaced call matches exactly one function or method across the entire codebase, it is linked as a high-probability resolution.
+3. **Type-hint and receiver resolution**: Variable annotations and function parameter types (e.g. `order: Order`) allow method calls on that variable (`order.cancel()`) to be unambiguously resolved to `Order.cancel`.
+4. **Import table resolution**: When a file contains `from services.order import cancel_order`, any subsequent call to `cancel_order()` is linked directly to the target node in `services/order.py`.
+5. **Member call resolution**: For calls of the form `service.cancel_order()`, if `service` is an instance or alias of `OrderService`, the engine links to `OrderService.cancel_order`.
+6. **Unique repository match**: If an un-namespaced call matches exactly one function or method across the entire codebase, it is linked as a high-probability resolution.
 
 ## 5. Incremental caching
 
@@ -94,3 +103,9 @@ To avoid re-parsing unchanged files in large repositories:
 1. Each parsed file stores a SHA256 content checksum.
 2. The `.repograph/cache.json` file stores all serialized `ParsedFile` objects and their hashes.
 3. During subsequent scans, files with matching file sizes and checksums bypass Tree-sitter parsing and are reloaded directly from cache in milliseconds.
+
+## 6. Git Diff and Path Analysis
+
+- **Git diff line intersection**: The engine executes `git diff --unified=0` or parses provided diff hunks, extracts modified line sets per file, and intersects them against the AST boundary coordinates (`line_start`..`line_end`) of parsed symbols.
+- **Shortest call paths**: Uses bidirectional Dijkstra / BFS traversal on the directed subgraph to identify the precise chain of function calls leading from any entrypoint or source symbol to a target symbol.
+- **Live file watching**: Uses Python `watchdog` to monitor filesystem write/delete events, invalidating cache entries for touched files and rebuilding the graph incrementally.

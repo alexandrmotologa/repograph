@@ -39,6 +39,7 @@ from tree_sitter import Node
 from repograph.parser.base import BaseParser, compute_content_hash
 from repograph.models import ParsedFile, SymbolNode, SymbolKind
 
+
 class GoParser(BaseParser):
     language_name = "go"
 
@@ -64,6 +65,7 @@ Update `src/repograph/parser/engine.py` in `create_default_registry`:
 
 ```python
 from repograph.parser.go_parser import GoParser
+
 
 def create_default_registry() -> ParserRegistry:
     registry = ParserRegistry()

@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -75,6 +75,17 @@ def create_app(root_dir: Path) -> FastAPI:
     def get_metrics():
         """Retrieve architectural coupling and health metrics."""
         return coupling_analyzer.compute_metrics().model_dump()
+
+    @app.get("/api/path")
+    def get_path(source: str, target: str):
+        """Find the shortest call chain between two symbols."""
+        from repograph.graph.paths import PathFinder
+
+        finder = PathFinder(graph)
+        res = finder.find_shortest_path(source, target)
+        if not res:
+            raise HTTPException(status_code=404, detail="No directed path found")
+        return res.model_dump()
 
     @app.get("/", response_class=HTMLResponse)
     def index():

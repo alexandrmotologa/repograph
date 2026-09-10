@@ -68,6 +68,8 @@ class SymbolNode(BaseModel):
     line_end: int
     docstring: str | None = None
     parameters: list[str] = Field(default_factory=list)
+    param_types: dict[str, str] = Field(default_factory=dict)
+    return_type: str | None = None
     is_exported: bool = False
     is_entrypoint: bool = False
     complexity: int = 1

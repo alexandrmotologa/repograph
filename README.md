@@ -6,16 +6,23 @@ RepoGraph runs locally on your machine with zero external cloud dependencies. It
 
 ## Supported languages
 
-- **Python**: function and class definitions, method calls, decorators, module imports, and relative package references.
+- **Python**: function and class definitions, method calls, type annotations, decorators, module imports, and relative package references.
 - **TypeScript and JavaScript**: ES modules, CommonJS `require`, classes, interfaces, arrow functions, and call sites.
 - **Java**: package structures, classes, interfaces, method declarations, constructor invocations, and inheritance hierarchies.
+- **Go**: struct definitions, receiver methods, package declarations, and call expressions.
+- **Rust**: functions, struct definitions, trait definitions, `impl` blocks, and function invocations.
 
 ## Features
 
 - **Blast radius engine**: Computes upstream callers (who breaks when a symbol changes) and downstream callees (what side effects trigger). Generates a quantified impact risk score (0 to 100).
+- **Git diff PR blast radius**: Maps modified lines from git diff or pull requests to affected symbols and computes aggregate risk with configurable CI threshold gates (`--max-risk`).
+- **Shortest call path tracing**: Computes the shortest directed call chain between any two symbols across modules (`repograph path`).
 - **Tarjan circular dependency detection**: Identifies cyclic import loops at both module and symbol levels.
 - **Dead code detection**: Flags functions, methods, and classes that have zero incoming call references or imports across the codebase.
 - **Coupling and instability metrics**: Calculates afferent coupling ($C_a$), efferent coupling ($C_e$), and Martin instability ($I$) per module to locate structural hotspots.
+- **Standalone HTML report**: Exports a self-contained offline HTML report with an embedded Cytoscape.js interactive graph for sharing without running a server.
+- **Live file watcher**: Observes source file changes, invalidates incremental caches, and recalculates graph metrics automatically in real time.
+- **Interactive shell (REPL)**: Interactive command-line environment for querying symbols, tracing paths, and assessing blast radius.
 - **Terminal TUI**: Interactive keyboard-driven terminal dashboard with fuzzy search, callers tree, and syntax-highlighted symbol preview.
 - **Web visualizer**: Local FastAPI server with an interactive Cytoscape canvas graph supporting click-to-isolate blast radius exploration.
 - **CI/CD export**: Generates JSON, Graphviz DOT, and Mermaid diagrams for pull request reviews and documentation.
@@ -157,10 +164,65 @@ repograph serve --dir ./path/to/project --port 8765
 
 Open `http://127.0.0.1:8765` in your browser. Click on any node to isolate its blast radius and highlight upstream and downstream paths.
 
+### 9. Trace shortest call path between symbols
+
+Find the direct chain of calls connecting any two symbols across modules:
+
+```bash
+repograph path "cancel_endpoint" "dispatch" --dir ./path/to/project
+```
+
+Output:
+
+```text
+Shortest Path (3 hops):
+  1. cancel_endpoint (controllers/order_controller.py) --|CALLS|--> cancel_order (services/order_service.py)
+  2. cancel_order (services/order_service.py) --|CALLS|--> cancel (models/order.py)
+  3. cancel (models/order.py) --|CALLS|--> dispatch (infra/outbox.py)
+```
+
+### 10. Assess PR and Git diff blast radius
+
+Check the blast radius of uncommitted changes or compare against a base branch:
+
+```bash
+# Analyze staged changes
+repograph diff --dir ./path/to/project --staged
+
+# Analyze changes against main with a risk threshold gate for CI/CD
+repograph diff --dir ./path/to/project --base origin/main --max-risk 60 --format markdown
+```
+
+### 11. Generate standalone offline HTML report
+
+Create a self-contained HTML report with an embedded Cytoscape canvas graph:
+
+```bash
+repograph report --dir ./path/to/project --output ./report.html
+```
+
+The generated file can be viewed in any browser or attached to build artifacts with no server required.
+
+### 12. Run live file watcher
+
+Monitor the codebase for file edits and automatically recompute graph metrics and cycles:
+
+```bash
+repograph watch ./path/to/project
+```
+
+### 13. Interactive graph shell
+
+Open an interactive REPL session to query symbols, trace paths, and run commands interactively:
+
+```bash
+repograph shell --dir ./path/to/project
+```
+
 ## Architecture
 
 ```text
-Source Files (Python, TS/JS, Java)
+Source Files (Python, TS/JS, Java, Go, Rust)
          │
          ▼
 Tree-sitter Language Parsers ───► AST Symbol Extraction (Functions, Classes, Calls, Imports)
@@ -169,11 +231,16 @@ Tree-sitter Language Parsers ───► AST Symbol Extraction (Functions, Clas
 Graph Builder (NetworkX) ────────► Directed Code Property Graph (DiGraph)
          │
          ├───► Blast Radius Engine (Upstream / Downstream Traversal & Risk Scoring)
+         ├───► Git Diff PR Analyzer (Line mapping & CI threshold gating)
+         ├───► Path Finder (Shortest directed call chains)
          ├───► Cycle Detector (Tarjan's Strongly Connected Components)
          ├───► Dead Code Hunter (Zero in-degree analysis)
          └───► Coupling Analyzer (Ca, Ce, Instability metrics)
          │
-         ├───► CLI (Typer & Rich)
+         ├───► CLI (Typer & Rich commands)
+         ├───► Interactive Shell (REPL query console)
+         ├───► Live File Watcher (Incremental re-indexing)
+         ├───► Offline HTML Report (Standalone Cytoscape bundle)
          ├───► TUI (Textual Terminal Dashboard)
          └───► Web Server (FastAPI + Cytoscape.js Canvas)
 ```

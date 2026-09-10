@@ -62,7 +62,8 @@ class CallHierarchyTree(Tree):
         self.root.label = f"Target: [bold cyan]{report.target_name}[/bold cyan]"
 
         up_branch = self.root.add(
-            f"[bold red][^] Upstream Callers ({len(report.upstream_callers)})[/bold red]", expand=True
+            f"[bold red][^] Upstream Callers ({len(report.upstream_callers)})[/bold red]",
+            expand=True,
         )
         for node in report.upstream_callers:
             badge = f"[{node.category.value}]"

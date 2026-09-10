@@ -49,3 +49,10 @@ def test_web_endpoints():
     assert res.status_code == 200
     d_data = res.json()
     assert "total_dead" in d_data
+
+    # 7. Test /api/path
+    res = client.get("/api/path?source=cancel_endpoint&target=dispatch")
+    assert res.status_code == 200
+    p_data = res.json()
+    assert "steps" in p_data
+    assert p_data["total_hops"] >= 1

@@ -7,8 +7,10 @@ from pathlib import Path
 from repograph.config import ScanConfig
 from repograph.models import ParsedFile
 from repograph.parser.base import ParserRegistry
+from repograph.parser.go_parser import GoParser
 from repograph.parser.java_parser import JavaParser
 from repograph.parser.python_parser import PythonParser
+from repograph.parser.rust_parser import RustParser
 from repograph.parser.ts_parser import TypeScriptParser
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,8 @@ def create_default_registry() -> ParserRegistry:
     registry.register(TypeScriptParser(is_typescript=True))
     registry.register(TypeScriptParser(is_typescript=False))
     registry.register(JavaParser())
+    registry.register(GoParser())
+    registry.register(RustParser())
     return registry
 
 

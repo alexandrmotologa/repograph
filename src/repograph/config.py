@@ -47,6 +47,8 @@ class ScanConfig:
             ".ts": "typescript",
             ".tsx": "typescript",
             ".java": "java",
+            ".go": "go",
+            ".rs": "rust",
         }
     )
     max_file_size_bytes: int = 2 * 1024 * 1024  # 2 MB limit per file to prevent hangs
