@@ -109,3 +109,24 @@ To avoid re-parsing unchanged files in large repositories:
 - **Git diff line intersection**: The engine executes `git diff --unified=0` or parses provided diff hunks, extracts modified line sets per file, and intersects them against the AST boundary coordinates (`line_start`..`line_end`) of parsed symbols.
 - **Shortest call paths**: Uses bidirectional Dijkstra / BFS traversal on the directed subgraph to identify the precise chain of function calls leading from any entrypoint or source symbol to a target symbol.
 - **Live file watching**: Uses Python `watchdog` to monitor filesystem write/delete events, invalidating cache entries for touched files and rebuilding the graph incrementally.
+
+## 7. Architectural Linter Engine
+
+The `ArchitecturalLinter` (`src/repograph/analyzer/linter.py`) executes declarative rules defined in `repograph.toml` or `pyproject.toml`:
+- **Forbidden Import Rules**: Prevents architectural layer leaks (e.g. domain layers depending on infrastructure or controllers).
+- **Instability Bounds**: Enforces Martin instability bounds (`I = Ce / (Ca + Ce)`) to prevent fragile or overly coupled modules.
+- **Cyclomatic Complexity Thresholds**: Flags complex symbols exceeding configured AST branch thresholds.
+
+## 8. Model Context Protocol (MCP) AI Subsystem
+
+The `RepoGraphMCPServer` (`src/repograph/mcp_server.py`) provides a standard JSON-RPC 2.0 stdio server compliant with the Model Context Protocol:
+- Enables AI assistants (Antigravity, Claude Desktop, Cursor) to directly query the codebase graph.
+- Exposes 9 specialized tools: `search_symbols`, `get_blast_radius`, `find_call_path`, `get_upstream_callers`, `get_downstream_callees`, `get_circular_dependencies`, `get_dead_code`, `get_architectural_metrics`, and `lint_architecture`.
+
+## 9. SARIF 2.1.0 Static Analysis Export
+
+The `SarifExporter` (`src/repograph/export_sarif.py`) serializes architectural violations, circular dependency warnings, dead code, and high blast-risk symbols into OASIS SARIF 2.1.0 format, enabling direct ingestion into GitHub Code Scanning and security tabs.
+
+## 10. Single-File Offline HTML Report
+
+The `HtmlReportGenerator` (`src/repograph/export_html.py`) bundles the full graph data, Cytoscape.js runtime, glassmorphic dark theme CSS, and interactive client-side blast radius inspection into an offline, zero-dependency HTML document (`repograph export -f html -o report.html`).

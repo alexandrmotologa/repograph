@@ -65,4 +65,11 @@ jobs:
       - name: Calculate blast radius
         run: |
           uv run repograph blast-radius "Order.cancel" --dir .
+      - name: Export SARIF Security & Architectural Report
+        run: |
+          uv run repograph export -f sarif -o results.sarif
+      - name: Upload SARIF report to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
 ```
