@@ -96,20 +96,47 @@ class ScannerEngine:
     def scan_directory(
         self,
         config: ScanConfig,
+        cached_files: dict[str, ParsedFile] | None = None,
         existing_hashes: dict[str, str] | None = None,
         max_workers: int = 4,
     ) -> dict[str, ParsedFile]:
-        """Scan all matching files in root_dir using a thread pool."""
+        """Scan all matching files in root_dir using a thread pool, reusing cached files when hashes match."""
         files = self.discover_files(config.root_dir, config)
         parsed_files: dict[str, ParsedFile] = {}
+        cached_files = cached_files or {}
+        existing_hashes = existing_hashes or {}
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(self.scan_file, f, config.root_dir, config): f for f in files
-            }
-            for future in futures:
-                result = future.result()
-                if result:
-                    parsed_files[result.file_path] = result
+        files_to_parse: list[Path] = []
+
+        for f in files:
+            try:
+                rel_path = f.relative_to(config.root_dir).as_posix()
+            except ValueError:
+                rel_path = f.as_posix()
+
+            if rel_path in cached_files and rel_path in existing_hashes:
+                try:
+                    content = f.read_bytes()
+                    from repograph.parser.base import compute_content_hash
+
+                    current_hash = compute_content_hash(content)
+                    if current_hash == existing_hashes[rel_path]:
+                        parsed_files[rel_path] = cached_files[rel_path]
+                        continue
+                except Exception:
+                    pass
+
+            files_to_parse.append(f)
+
+        if files_to_parse:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(self.scan_file, f, config.root_dir, config): f
+                    for f in files_to_parse
+                }
+                for future in futures:
+                    result = future.result()
+                    if result:
+                        parsed_files[result.file_path] = result
 
         return parsed_files

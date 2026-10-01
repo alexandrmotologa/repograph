@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RepoGraph — Interactive Codebase Knowledge Graph</title>
+  <title>RepoGraph — Interactive Codebase Knowledge Graph & Blast Radius Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 </head>
@@ -11,15 +14,30 @@
   <header>
     <div class="brand">
       <div class="logo-text">RepoGraph</div>
+      <span class="version-tag">v0.1.0</span>
       <div class="stat-badge" id="stat-nodes">0 symbols</div>
       <div class="stat-badge" id="stat-edges">0 edges</div>
       <div class="stat-badge" id="stat-cycles">0 cycles</div>
     </div>
+    
+    <div class="filter-toolbar">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="class">Classes</button>
+      <button class="filter-btn" data-filter="function">Functions</button>
+      <button class="filter-btn" data-filter="interface">Interfaces</button>
+      <button class="filter-btn" data-filter="entrypoint">Entrypoints</button>
+    </div>
+
     <div class="header-controls">
-      <input type="text" id="search" class="search-input" placeholder="Search symbols in graph...">
+      <div class="search-box">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="search" class="search-input" placeholder="Search symbols (/)...">
+      </div>
       <div class="btn-group">
-        <button id="btn-fit">Fit Graph</button>
-        <button id="btn-reset">Clear Selection</button>
+        <button id="btn-fit" title="Fit graph (F)">Fit</button>
+        <button id="btn-layout" title="Rearrange layout">Layout</button>
+        <button id="btn-export-png" title="Export as PNG image">Export PNG</button>
+        <button id="btn-reset" title="Clear selection (Esc)">Reset</button>
       </div>
     </div>
   </header>
@@ -29,16 +47,17 @@
 
     <aside class="inspector-drawer" id="drawer">
       <div class="drawer-header">
+        <div class="kind-badge" id="drawer-kind">SYMBOL</div>
         <h2 class="symbol-title" id="drawer-title">Select a Symbol</h2>
         <div class="symbol-meta" id="drawer-file">Click any node to inspect blast radius</div>
       </div>
 
       <div class="score-card">
         <div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase;">Blast Radius</div>
+          <div class="score-label">Blast Radius Risk</div>
           <div class="score-val score-green" id="score-value">--/100</div>
         </div>
-        <div style="text-align: right; font-size: 0.85rem;">
+        <div class="score-stats">
           <div><strong id="count-callers">0</strong> callers</div>
           <div><strong id="count-files">0</strong> files</div>
           <div><strong id="count-apis">0</strong> entrypoints</div>
@@ -46,16 +65,22 @@
       </div>
 
       <div class="tree-section">
-        <div class="tree-title">▲ Upstream Callers (Who breaks)</div>
+        <div class="tree-title">
+          <span>▲ Upstream Callers (Who Breaks)</span>
+          <span class="count-pill" id="upstream-count-pill">0</span>
+        </div>
         <ul class="tree-list" id="upstream-list">
-          <li style="color: var(--text-secondary); font-size: 0.8rem;">No callers identified.</li>
+          <li class="tree-empty">No callers identified.</li>
         </ul>
       </div>
 
       <div class="tree-section">
-        <div class="tree-title">▼ Downstream Callees (Side effects)</div>
+        <div class="tree-title">
+          <span>▼ Downstream Callees (Side Effects)</span>
+          <span class="count-pill" id="downstream-count-pill">0</span>
+        </div>
         <ul class="tree-list" id="downstream-list">
-          <li style="color: var(--text-secondary); font-size: 0.8rem;">No dependencies identified.</li>
+          <li class="tree-empty">No dependencies identified.</li>
         </ul>
       </div>
     </aside>

@@ -142,7 +142,11 @@ class PythonParser(BaseParser):
 
             def _visit_call(cur: Node) -> None:
                 # Stop if entering a nested function or class; they will have their own scope
-                if cur.type in ("function_definition", "class_definition") and cur != scope_node:
+                if (
+                    cur.type
+                    in ("function_definition", "async_function_definition", "class_definition")
+                    and cur != scope_node
+                ):
                     return
 
                 if cur.type == "call":
@@ -170,11 +174,15 @@ class PythonParser(BaseParser):
                 actual_node = child
                 if child.type == "decorated_definition":
                     for sub in child.children:
-                        if sub.type in ("function_definition", "class_definition"):
+                        if sub.type in (
+                            "function_definition",
+                            "async_function_definition",
+                            "class_definition",
+                        ):
                             actual_node = sub
                             break
 
-                if actual_node.type == "function_definition":
+                if actual_node.type in ("function_definition", "async_function_definition"):
                     name_node = actual_node.child_by_field_name("name")
                     if name_node:
                         fn_name = get_text(name_node)
@@ -338,6 +346,7 @@ class PythonParser(BaseParser):
 
                 elif actual_node.type not in (
                     "function_definition",
+                    "async_function_definition",
                     "class_definition",
                     "decorated_definition",
                 ):

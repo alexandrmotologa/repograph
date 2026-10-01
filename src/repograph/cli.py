@@ -13,7 +13,7 @@ from repograph.analyzer.blast_radius import BlastRadiusCalculator
 from repograph.analyzer.coupling import CouplingAnalyzer
 from repograph.analyzer.cycles import CycleDetector
 from repograph.analyzer.dead_code import DeadCodeHunter
-from repograph.config import ScanConfig
+from repograph.config import load_config
 from repograph.export import GraphExporter
 from repograph.graph.builder import GraphBuilder
 from repograph.graph.cache import GraphCache
@@ -29,7 +29,7 @@ console = Console()
 
 def _build_graph_for_dir(target_dir: Path, use_cache: bool = True):
     """Internal helper to scan directory and construct the graph."""
-    config = ScanConfig(root_dir=target_dir.resolve())
+    config = load_config(target_dir.resolve())
     engine = ScannerEngine()
     cache = GraphCache(config.root_dir / config.cache_dir)
 
@@ -38,7 +38,9 @@ def _build_graph_for_dir(target_dir: Path, use_cache: bool = True):
         cached_files, cached_hashes = cache.load()
 
     # Discover and scan
-    parsed_files = engine.scan_directory(config, existing_hashes=cached_hashes)
+    parsed_files = engine.scan_directory(
+        config, cached_files=cached_files, existing_hashes=cached_hashes
+    )
 
     # Save to cache if enabled
     if use_cache and parsed_files:
@@ -274,9 +276,20 @@ def export(
         res = exporter.to_dot()
     elif fmt == "mermaid":
         res = exporter.to_mermaid()
+    elif fmt == "sarif":
+        from repograph.export_sarif import SarifExporter
+
+        config = load_config(directory.resolve())
+        sarif_exp = SarifExporter(graph, rules=config.rules)
+        res = sarif_exp.to_json()
+    elif fmt == "html":
+        from repograph.export_html import HtmlReportGenerator
+
+        html_gen = HtmlReportGenerator(graph)
+        res = html_gen.generate_html()
     else:
         console.print(
-            f"[bold red]Unsupported format: {format}. Choose 'json', 'dot', or 'mermaid'.[/bold red]"
+            f"[bold red]Unsupported format: {format}. Choose 'json', 'dot', 'mermaid', 'sarif', or 'html'.[/bold red]"
         )
         raise typer.Exit(code=1)
 
@@ -471,6 +484,46 @@ def tui(
 
     app = RepoGraphTUI(target_dir=directory.resolve())
     app.run()
+
+
+@app.command()
+def lint(
+    directory: Path = typer.Option(Path("."), "--dir", "-d", help="Repository path"),
+):
+    """Verify architectural rules, boundary constraints, and layer imports."""
+    from repograph.analyzer.linter import ArchitecturalLinter
+
+    config = load_config(directory.resolve())
+    graph, _ = _build_graph_for_dir(directory)
+    linter = ArchitecturalLinter(graph, config.rules)
+    report = linter.lint()
+
+    if report.total_violations == 0:
+        console.print("[bold green]All architectural rules and boundaries passed![/bold green]")
+        return
+
+    console.print(
+        f"[bold yellow]Found {report.total_violations} architectural violation(s) ({report.errors_count} errors, {report.warnings_count} warnings):[/bold yellow]\n"
+    )
+    for v in report.violations:
+        color = "red" if v.severity == "error" else "yellow"
+        console.print(
+            f"[{color}][{v.severity.upper()}][/{color}] [bold]{v.source_location}[/bold]: {v.message}"
+        )
+
+    if not report.is_clean:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def mcp(
+    directory: Path = typer.Option(Path("."), "--dir", "-d", help="Repository path"),
+):
+    """Start Model Context Protocol (MCP) JSON-RPC stdio server for AI assistants."""
+    from repograph.mcp_server import RepoGraphMCPServer
+
+    server = RepoGraphMCPServer(directory.resolve())
+    server.run_stdio()
 
 
 def main():

@@ -78,3 +78,47 @@ public class App {
     assert any(s.name == "App" and s.kind == SymbolKind.CLASS for s in parsed.symbols)
     assert any(s.name == "run" and s.kind == SymbolKind.METHOD for s in parsed.symbols)
     assert any(c.callee_name == "System.out.println" for c in parsed.calls)
+
+
+def test_python_parser_async_function_extraction():
+    parser = PythonParser()
+    code = b"""
+import asyncio
+
+async def fetch_user(user_id: str):
+    await asyncio.sleep(0.01)
+    return {"id": user_id}
+
+class AsyncClient:
+    async def get_data(self):
+        return await fetch_user("123")
+"""
+    parsed = parser.parse("async_service.py", code)
+    symbols_by_name = {s.name: s for s in parsed.symbols}
+    assert "fetch_user" in symbols_by_name
+    assert symbols_by_name["fetch_user"].kind == SymbolKind.FUNCTION
+    assert "AsyncClient" in symbols_by_name
+    assert "get_data" in symbols_by_name
+    assert symbols_by_name["get_data"].kind == SymbolKind.METHOD
+    assert any(c.callee_name == "fetch_user" for c in parsed.calls)
+
+
+def test_scanner_engine_incremental_cache_reuse(tmp_path):
+    from repograph.config import ScanConfig
+    from repograph.parser.base import compute_content_hash
+    from repograph.parser.engine import ScannerEngine
+
+    file_a = tmp_path / "a.py"
+    file_a.write_text("def foo():\n    return 42\n", encoding="utf-8")
+
+    config = ScanConfig(root_dir=tmp_path)
+    engine = ScannerEngine()
+
+    parsed_1 = engine.scan_directory(config)
+    assert "a.py" in parsed_1
+    cached_pf = parsed_1["a.py"]
+    hashes = {"a.py": compute_content_hash(file_a.read_bytes())}
+
+    # Second scan with cache
+    parsed_2 = engine.scan_directory(config, cached_files=parsed_1, existing_hashes=hashes)
+    assert parsed_2["a.py"] is cached_pf  # Exact same cached instance reused!

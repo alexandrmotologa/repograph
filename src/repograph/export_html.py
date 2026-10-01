@@ -55,127 +55,165 @@ class HtmlReportGenerator:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {{
-      --bg-primary: #0d1117;
-      --bg-secondary: #161b22;
-      --bg-card: rgba(22, 27, 34, 0.9);
-      --border-color: #30363d;
+      --bg-primary: #090d13;
+      --bg-secondary: #0f141c;
+      --bg-card: rgba(15, 20, 28, 0.9);
+      --border-color: rgba(255, 255, 255, 0.08);
       --text-primary: #f0f6fc;
       --text-secondary: #8b949e;
-      --accent-cyan: #58a6ff;
-      --accent-green: #3fb950;
-      --accent-yellow: #d29922;
-      --accent-red: #f85149;
-      --accent-purple: #bc8cff;
+      --accent-cyan: #38bdf8;
+      --accent-green: #34d399;
+      --accent-yellow: #fbbf24;
+      --accent-red: #f87171;
+      --accent-purple: #c084fc;
     }}
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg-primary);
       color: var(--text-primary);
       display: flex;
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }}
     header {{
       background-color: var(--bg-secondary);
       border-bottom: 1px solid var(--border-color);
-      padding: 12px 24px;
+      padding: 10px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
+      z-index: 20;
     }}
+    .brand {{ display: flex; align-items: center; gap: 10px; }}
     .logo-text {{
-      font-weight: 700;
+      font-weight: 800;
       font-size: 1.25rem;
-      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #38bdf8, #c084fc);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }}
     .stat-badge {{
-      background-color: rgba(88, 166, 255, 0.15);
+      font-family: 'JetBrains Mono', monospace;
+      background-color: rgba(56, 189, 248, 0.1);
       color: var(--accent-cyan);
-      border: 1px solid rgba(88, 166, 255, 0.3);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 0.75rem;
       font-weight: 600;
-      margin-left: 8px;
     }}
     .stat-badge.cycles {{
-      background-color: rgba(248, 81, 73, 0.15);
+      background-color: rgba(248, 113, 113, 0.12);
       color: var(--accent-red);
-      border-color: rgba(248, 81, 73, 0.3);
+      border-color: rgba(248, 113, 113, 0.3);
     }}
+    .header-controls {{ display: flex; align-items: center; gap: 10px; }}
     .search-input {{
-      background-color: var(--bg-primary);
+      background-color: rgba(0, 0, 0, 0.3);
       border: 1px solid var(--border-color);
       border-radius: 6px;
       color: var(--text-primary);
-      padding: 6px 14px;
-      font-size: 0.9rem;
-      width: 260px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      width: 220px;
       outline: none;
+      font-family: inherit;
     }}
+    .search-input:focus {{ border-color: var(--accent-cyan); }}
     .layout-container {{ display: flex; flex: 1; position: relative; overflow: hidden; }}
-    #cy {{ flex: 1; height: 100%; background-color: #0b0e14; }}
+    #cy {{
+      flex: 1;
+      height: 100%;
+      background-color: #06090e;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }}
     .inspector-drawer {{
-      width: 380px;
+      width: 400px;
       background-color: var(--bg-card);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       border-left: 1px solid var(--border-color);
-      padding: 20px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
       gap: 16px;
       overflow-y: auto;
+      z-index: 10;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+    }}
+    .kind-badge {{
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: rgba(192, 132, 252, 0.15);
+      color: var(--accent-purple);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
     }}
     .score-card {{
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 14px;
+      border-radius: 10px;
+      padding: 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }}
-    .score-val {{ font-size: 1.8rem; font-weight: 700; }}
+    .score-val {{ font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 800; }}
     .score-green {{ color: var(--accent-green); }}
     .score-yellow {{ color: var(--accent-yellow); }}
     .score-red {{ color: var(--accent-red); }}
-    .tree-title {{ font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); }}
+    .tree-title {{ font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); }}
     .tree-item {{
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.025);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 8px 10px;
+      border-radius: 8px;
+      padding: 10px 12px;
       font-size: 0.82rem;
       margin-top: 6px;
       cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }}
+    .tree-item:hover {{ background: rgba(56, 189, 248, 0.08); border-color: var(--accent-cyan); }}
+    .tree-item .path {{ font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #64748b; }}
     button {{
-      background-color: var(--bg-secondary);
+      background-color: rgba(255, 255, 255, 0.04);
       color: var(--text-primary);
       border: 1px solid var(--border-color);
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 0.82rem;
     }}
+    button:hover {{ background-color: rgba(255, 255, 255, 0.08); }}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 </head>
 <body>
   <header>
-    <div style="display: flex; align-items: center;">
+    <div class="brand">
       <div class="logo-text">RepoGraph</div>
       <span class="stat-badge" id="stat-nodes">0 symbols</span>
       <span class="stat-badge" id="stat-edges">0 edges</span>
       <span class="stat-badge" id="stat-cycles">0 cycles</span>
     </div>
-    <div>
-      <input type="text" id="search" class="search-input" placeholder="Search symbols...">
+    <div class="header-controls">
+      <input type="text" id="search" class="search-input" placeholder="Search symbols (/)...">
       <button id="btn-fit">Fit Graph</button>
       <button id="btn-reset">Reset</button>
     </div>
@@ -185,17 +223,18 @@ class HtmlReportGenerator:
     <div id="cy"></div>
     <aside class="inspector-drawer">
       <div>
-        <h2 id="drawer-title" style="font-size: 1.15rem; word-break: break-word;">Select a Symbol</h2>
-        <div id="drawer-file" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">Click any node in graph</div>
+        <div class="kind-badge" id="drawer-kind">SYMBOL</div>
+        <h2 id="drawer-title" style="font-size: 1.15rem; font-weight: 700; word-break: break-word;">Select a Symbol</h2>
+        <div id="drawer-file" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">Click any node in graph</div>
       </div>
       <div class="score-card">
         <div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase;">Blast Radius</div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Blast Radius</div>
           <div class="score-val score-green" id="score-value">--/100</div>
         </div>
-        <div style="text-align: right; font-size: 0.85rem;">
-          <div><strong id="count-callers">0</strong> callers</div>
-          <div><strong id="count-files">0</strong> files</div>
+        <div style="text-align: right; font-size: 0.82rem; color: var(--text-secondary);">
+          <div><strong id="count-callers" style="color:#fff; font-family:'JetBrains Mono'">0</strong> callers</div>
+          <div><strong id="count-files" style="color:#fff; font-family:'JetBrains Mono'">0</strong> files</div>
         </div>
       </div>
       <div>
@@ -224,21 +263,24 @@ class HtmlReportGenerator:
         container: document.getElementById("cy"),
         elements: DATA.elements,
         style: [
-          {{ selector: "node", style: {{ "label": "data(label)", "color": "#f0f6fc", "font-size": "11px", "background-color": "#58a6ff", "width": 24, "height": 24 }} }},
-          {{ selector: 'node[kind = "class"]', style: {{ "background-color": "#bc8cff", "shape": "round-rectangle", "width": 30, "height": 30 }} }},
-          {{ selector: 'node[kind = "interface"]', style: {{ "background-color": "#d29922", "shape": "diamond", "width": 28, "height": 28 }} }},
-          {{ selector: "edge", style: {{ "width": 1.5, "line-color": "#30363d", "target-arrow-color": "#30363d", "target-arrow-shape": "triangle", "curve-style": "bezier", "opacity": 0.6 }} }},
-          {{ selector: ".highlighted-target", style: {{ "background-color": "#f85149", "width": 36, "height": 36, "z-index": 999 }} }},
-          {{ selector: ".highlighted-upstream", style: {{ "background-color": "#d29922", "line-color": "#d29922", "target-arrow-color": "#d29922", "opacity": 1.0 }} }},
-          {{ selector: ".highlighted-downstream", style: {{ "background-color": "#58a6ff", "line-color": "#58a6ff", "target-arrow-color": "#58a6ff", "opacity": 1.0 }} }},
+          {{ selector: "node", style: {{ "label": "data(label)", "color": "#f0f6fc", "font-family": "Inter, sans-serif", "font-size": "11px", "font-weight": 500, "text-valign": "bottom", "text-margin-y": "6px", "background-color": "#38bdf8", "width": 26, "height": 26, "border-width": 1.5, "border-color": "rgba(255,255,255,0.15)" }} }},
+          {{ selector: 'node[kind = "class"]', style: {{ "background-color": "#c084fc", "shape": "round-rectangle", "width": 32, "height": 32 }} }},
+          {{ selector: 'node[kind = "interface"]', style: {{ "background-color": "#fbbf24", "shape": "diamond", "width": 30, "height": 30 }} }},
+          {{ selector: 'node[kind = "module"]', style: {{ "background-color": "#475569", "shape": "ellipse", "width": 20, "height": 20 }} }},
+          {{ selector: "node[?is_entrypoint]", style: {{ "border-width": 3, "border-color": "#f87171" }} }},
+          {{ selector: "edge", style: {{ "width": 1.5, "line-color": "#334155", "target-arrow-color": "#334155", "target-arrow-shape": "triangle", "curve-style": "bezier", "opacity": 0.65 }} }},
+          {{ selector: ".highlighted-target", style: {{ "background-color": "#f87171", "border-color": "#ffffff", "border-width": 3.5, "width": 40, "height": 40, "z-index": 999 }} }},
+          {{ selector: ".highlighted-upstream", style: {{ "background-color": "#fbbf24", "line-color": "#fbbf24", "target-arrow-color": "#fbbf24", "opacity": 1.0, "width": 32, "height": 32 }} }},
+          {{ selector: ".highlighted-downstream", style: {{ "background-color": "#38bdf8", "line-color": "#38bdf8", "target-arrow-color": "#38bdf8", "opacity": 1.0, "width": 32, "height": 32 }} }},
           {{ selector: ".dimmed", style: {{ "opacity": 0.12 }} }}
         ],
-        layout: {{ name: "cose", animate: false }}
+        layout: {{ name: "cose", animate: false, randomize: false, componentSpacing: 90, nodeOverlap: 20, idealEdgeLength: 60 }}
       }});
 
       cy.on("tap", "node", (evt) => {{
         const node = evt.target;
         const nId = node.data("id");
+        document.getElementById("drawer-kind").textContent = node.data("kind") || "SYMBOL";
         document.getElementById("drawer-title").textContent = node.data("label");
         document.getElementById("drawer-file").textContent = node.data("file_path");
 
@@ -255,7 +297,7 @@ class HtmlReportGenerator:
           rep.upstream_callers.forEach(u => {{
             const li = document.createElement("li");
             li.className = "tree-item";
-            li.textContent = `${{u.name}} (${{u.file_path}})`;
+            li.innerHTML = `<strong>${{u.name}}</strong><span class="path">${{u.file_path}}</span>`;
             uList.appendChild(li);
           }});
 
@@ -264,7 +306,7 @@ class HtmlReportGenerator:
           rep.downstream_callees.forEach(d => {{
             const li = document.createElement("li");
             li.className = "tree-item";
-            li.textContent = `${{d.name}} (${{d.file_path}})`;
+            li.innerHTML = `<strong>${{d.name}}</strong><span class="path">${{d.file_path}}</span>`;
             dList.appendChild(li);
           }});
 
@@ -275,13 +317,13 @@ class HtmlReportGenerator:
         }}
       }});
 
-      document.getElementById("btn-fit").addEventListener("click", () => cy.fit());
+      document.getElementById("btn-fit").addEventListener("click", () => cy.fit(undefined, 30));
       document.getElementById("btn-reset").addEventListener("click", () => cy.elements().removeClass("highlighted-target highlighted-upstream highlighted-downstream dimmed"));
       document.getElementById("search").addEventListener("input", (e) => {{
         const q = e.target.value.toLowerCase().trim();
         if (!q) {{ cy.elements().removeClass("dimmed"); return; }}
         cy.elements().addClass("dimmed");
-        const matched = cy.nodes().filter(n => (n.data("label")||"").toLowerCase().includes(q));
+        const matched = cy.nodes().filter(n => (n.data("label")||"").toLowerCase().includes(q) || (n.data("file_path")||"").toLowerCase().includes(q));
         matched.removeClass("dimmed");
         matched.connectedEdges().removeClass("dimmed");
       }});

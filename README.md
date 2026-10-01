@@ -36,12 +36,15 @@ RepoGraph runs locally on your machine with zero external cloud dependencies. It
 - **Tarjan circular dependency detection**: Identifies cyclic import loops at both module and symbol levels.
 - **Dead code detection**: Flags functions, methods, and classes that have zero incoming call references or imports across the codebase.
 - **Coupling and instability metrics**: Calculates afferent coupling ($C_a$), efferent coupling ($C_e$), and Martin instability ($I$) per module to locate structural hotspots.
+- **Architectural Linter**: Enforces clean architecture rules, forbidden import boundaries, and complexity limits (`repograph lint`).
+- **Model Context Protocol (MCP) Server**: Exposes 9 codebase intelligence tools over standard JSON-RPC stdio for Claude, Antigravity, and Cursor AI (`repograph mcp`).
+- **SARIF 2.1.0 Exporter**: Generates industry-standard Static Analysis Results Format for GitHub Code Scanning and security tabs (`repograph export -f sarif`).
 - **Standalone HTML report**: Exports a self-contained offline HTML report with an embedded Cytoscape.js interactive graph for sharing without running a server.
 - **Live file watcher**: Observes source file changes, invalidates incremental caches, and recalculates graph metrics automatically in real time.
 - **Interactive shell (REPL)**: Interactive command-line environment for querying symbols, tracing paths, and assessing blast radius.
 - **Terminal TUI**: Interactive keyboard-driven terminal dashboard with fuzzy search, callers tree, and syntax-highlighted symbol preview.
 - **Web visualizer**: Local FastAPI server with an interactive Cytoscape canvas graph supporting click-to-isolate blast radius exploration.
-- **CI/CD export**: Generates JSON, Graphviz DOT, and Mermaid diagrams for pull request reviews and documentation.
+- **CI/CD export**: Generates SARIF, JSON, Graphviz DOT, and Mermaid diagrams for pull request reviews and documentation.
 
 ## Installation
 
@@ -245,6 +248,45 @@ Open an interactive REPL session to query symbols, trace paths, and run commands
 
 ```bash
 repograph shell --dir ./path/to/project
+```
+
+### 14. Lint architecture rules
+
+Enforce module boundaries, prevent layer leaks, and guard against high cyclomatic complexity:
+
+```bash
+repograph lint ./path/to/project
+```
+
+Define custom rules in `repograph.toml` or `pyproject.toml`:
+
+```toml
+[tool.repograph.rules]
+forbidden_imports = [
+  { from_pattern = "domain.*", to_pattern = "infra.*", description = "Domain must not depend on Infrastructure" }
+]
+max_cyclomatic_complexity = 15
+```
+
+### 15. Connect with AI via Model Context Protocol (MCP)
+
+Launch the MCP JSON-RPC server to provide tools directly to Antigravity, Claude Desktop, or Cursor:
+
+```bash
+repograph mcp --dir ./path/to/project
+```
+
+In your `.mcp.json` or `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "repograph": {
+      "command": "repograph",
+      "args": ["mcp", "--dir", "/path/to/repo"]
+    }
+  }
+}
 ```
 
 ## Architecture

@@ -90,3 +90,16 @@ def test_cli_report(tmp_path):
     result = runner.invoke(app, ["report", "--dir", FIXTURE_DIR, "--output", out_file])
     assert result.exit_code == 0
     assert "Standalone offline HTML report generated" in result.stdout
+
+
+def test_cli_lint():
+    result = runner.invoke(app, ["lint", "--dir", FIXTURE_DIR])
+    assert result.exit_code == 0
+    assert "All architectural rules and boundaries passed" in result.stdout
+
+
+def test_cli_export_sarif():
+    result = runner.invoke(app, ["export", "--dir", FIXTURE_DIR, "--format", "sarif"])
+    assert result.exit_code == 0
+    assert '"$schema"' in result.stdout
+    assert '"RepoGraph"' in result.stdout

@@ -175,8 +175,13 @@ class GraphBuilder:
         if not source_module:
             return None
 
+        # Clean TypeScript / Web aliases: '@/components/Button' -> 'components/Button'
+        clean_mod = source_module
+        if clean_mod.startswith(("@/", "~/")):
+            clean_mod = clean_mod[2:]
+
         # Convert dotted module to path: 'services.order' -> 'services/order'
-        normalized_mod = source_module.replace(".", "/")
+        normalized_mod = clean_mod.replace(".", "/")
         cur_dir = str(Path(current_file).parent).replace("\\", "/")
 
         candidates = []
@@ -196,9 +201,18 @@ class GraphBuilder:
             if cur_dir and cur_dir != ".":
                 candidates.append(f"{cur_dir}/{normalized_mod}")
 
+            # Check common source root prefixes (src/, lib/, app/, pkg/)
+            for prefix in ("src", "lib", "app", "pkg"):
+                candidates.append(f"{prefix}/{normalized_mod}")
+                if cur_dir and cur_dir.startswith(f"{prefix}/"):
+                    cand_inside = f"{prefix}/{normalized_mod}"
+                    if cand_inside not in candidates:
+                        candidates.append(cand_inside)
+
         # Check against files with extensions
+        supported_exts = (".py", ".ts", ".tsx", ".js", ".jsx", ".java", ".go", ".rs")
         for cand in candidates:
-            for ext in (".py", ".ts", ".tsx", ".js", ".jsx", ".java"):
+            for ext in supported_exts:
                 full = f"{cand}{ext}"
                 if full in all_parsed:
                     return full
@@ -210,6 +224,10 @@ class GraphBuilder:
                 init_py = f"{cand}/__init__.py"
                 if init_py in all_parsed:
                     return init_py
+                # Rust module mod.rs
+                mod_rs = f"{cand}/mod.rs"
+                if mod_rs in all_parsed:
+                    return mod_rs
 
         # Match by suffix (e.g. 'order_service' matching 'src/services/order_service.py')
         mod_tail = normalized_mod.split("/")[-1]

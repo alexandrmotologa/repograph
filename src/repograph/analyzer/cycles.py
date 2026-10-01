@@ -1,4 +1,6 @@
-"""Circular dependency detection at file, module, and symbol levels using Tarjan SCC."""
+"""Circular dependency detection at file, module, and symbol levels using Tarjan SCC and Johnson algorithms."""
+
+import itertools
 
 import networkx as nx
 
@@ -6,13 +8,13 @@ from repograph.models import CyclePath, CycleReport, EdgeType, SymbolKind
 
 
 class CycleDetector:
-    """Detects cyclical dependencies in imports and call hierarchies."""
+    """Detects cyclical dependencies in imports and call hierarchies with safety bounds."""
 
     def __init__(self, graph: nx.DiGraph) -> None:
         self.graph = graph
 
-    def detect_module_cycles(self) -> CycleReport:
-        """Construct a module/file-level dependency graph and find all simple cycles."""
+    def detect_module_cycles(self, max_cycles: int = 100) -> CycleReport:
+        """Construct a module/file-level dependency graph and find simple cycles safely."""
         # 1. Build collapsed file/module graph
         file_graph = nx.DiGraph()
 
@@ -26,19 +28,24 @@ class CycleDetector:
 
         cycles: list[CyclePath] = []
         try:
-            # simple_cycles finds all elementary circuits
-            found_cycles = list(nx.simple_cycles(file_graph))
-            for c in found_cycles:
-                if len(c) > 1:
-                    # Close the loop visually: [A, B, A]
-                    closed_loop = c + [c[0]]
-                    cycles.append(
-                        CyclePath(
-                            cycle_type="module",
-                            nodes=closed_loop,
-                            files=c,
+            # Find non-trivial SCCs first to isolate cyclic components
+            sccs = [scc for scc in nx.strongly_connected_components(file_graph) if len(scc) > 1]
+            for scc in sccs:
+                subg = file_graph.subgraph(scc)
+                for c in itertools.islice(nx.simple_cycles(subg), max_cycles - len(cycles)):
+                    if len(c) > 1:
+                        closed_loop = c + [c[0]]
+                        cycles.append(
+                            CyclePath(
+                                cycle_type="module",
+                                nodes=closed_loop,
+                                files=c,
+                            )
                         )
-                    )
+                    if len(cycles) >= max_cycles:
+                        break
+                if len(cycles) >= max_cycles:
+                    break
         except Exception:
             # Fallback to strongly connected components
             sccs = list(nx.strongly_connected_components(file_graph))
@@ -57,8 +64,8 @@ class CycleDetector:
         cycles.sort(key=lambda x: len(x.nodes))
         return CycleReport(cycles=cycles, total_cycles=len(cycles))
 
-    def detect_symbol_cycles(self) -> CycleReport:
-        """Find recursive or mutual circular call loops among functions and methods."""
+    def detect_symbol_cycles(self, max_cycles: int = 100) -> CycleReport:
+        """Find recursive or mutual circular call loops among functions and methods with safety bounds."""
         call_graph = nx.DiGraph()
 
         for u, v, data in self.graph.edges(data=True):
@@ -72,23 +79,30 @@ class CycleDetector:
 
         cycles: list[CyclePath] = []
         try:
-            for c in nx.simple_cycles(call_graph):
-                if len(c) > 1:
-                    closed = c + [c[0]]
-                    files = list(
-                        {
-                            self.graph.nodes[n].get("file_path", "")
-                            for n in c
-                            if self.graph.has_node(n)
-                        }
-                    )
-                    cycles.append(
-                        CyclePath(
-                            cycle_type="symbol",
-                            nodes=closed,
-                            files=files,
+            sccs = [scc for scc in nx.strongly_connected_components(call_graph) if len(scc) > 1]
+            for scc in sccs:
+                subg = call_graph.subgraph(scc)
+                for c in itertools.islice(nx.simple_cycles(subg), max_cycles - len(cycles)):
+                    if len(c) > 1:
+                        closed = c + [c[0]]
+                        files = list(
+                            {
+                                self.graph.nodes[n].get("file_path", "")
+                                for n in c
+                                if self.graph.has_node(n)
+                            }
                         )
-                    )
+                        cycles.append(
+                            CyclePath(
+                                cycle_type="symbol",
+                                nodes=closed,
+                                files=files,
+                            )
+                        )
+                    if len(cycles) >= max_cycles:
+                        break
+                if len(cycles) >= max_cycles:
+                    break
         except Exception:
             pass
 
