@@ -27,6 +27,33 @@ app = typer.Typer(
 console = Console()
 
 
+def version_callback(value: bool):
+    if value:
+        console.print(f"RepoGraph v{__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main_callback(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show RepoGraph version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    ),
+):
+    """RepoGraph: Local-First Codebase Knowledge Graph & Blast-Radius Engine."""
+    pass
+
+
+@app.command()
+def version():
+    """Print the version of RepoGraph."""
+    console.print(f"RepoGraph v{__version__}")
+
+
 def _build_graph_for_dir(target_dir: Path, use_cache: bool = True):
     """Internal helper to scan directory and construct the graph."""
     config = load_config(target_dir.resolve())

@@ -20,6 +20,10 @@ RepoGraph is a local-first codebase knowledge graph and blast-radius calculation
 
 RepoGraph runs locally on your machine with zero external cloud dependencies. It includes a terminal interface built with Textual and a local force-directed web visualizer served with FastAPI.
 
+<p align="center">
+  <img src="docs/images/repograph_demo.gif?raw=true" alt="RepoGraph Codebase Knowledge Graph and Blast-Radius Demo" width="100%" style="border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.4);" />
+</p>
+
 ## Supported languages
 
 - **Python**: function and class definitions, method calls, type annotations, decorators, module imports, and relative package references.

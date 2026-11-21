@@ -103,3 +103,21 @@ def test_cli_export_sarif():
     assert result.exit_code == 0
     assert '"$schema"' in result.stdout
     assert '"RepoGraph"' in result.stdout
+
+
+def test_cli_version_flag():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert "RepoGraph v" in result.stdout
+
+
+def test_cli_short_version_flag():
+    result = runner.invoke(app, ["-v"])
+    assert result.exit_code == 0
+    assert "RepoGraph v" in result.stdout
+
+
+def test_cli_version_command():
+    result = runner.invoke(app, ["version"])
+    assert result.exit_code == 0
+    assert "RepoGraph v" in result.stdout

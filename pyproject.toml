@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "repograph"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-first codebase knowledge graph and blast-radius engine"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -77,3 +77,4 @@ testpaths = ["tests/unit", "tests/integration"]
 norecursedirs = ["fixtures", "tests/fixtures", ".repograph", ".venv"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
